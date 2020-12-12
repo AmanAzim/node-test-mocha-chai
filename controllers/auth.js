@@ -70,21 +70,22 @@ exports.login = async (req, res, next) => {
   }
 };
 
-exports.getUserStatus = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.userId);
+exports.getUserStatus = (req, res, next) => {
+  return User.findById(req.userId).then((user) => {
     if (!user) {
       const error = new Error('User not found.');
       error.statusCode = 404;
       throw error;
     }
-    res.status(200).json({ status: user.status });
-  } catch (err) {
+    console.log('reaching >>>>>>>>>>>>>>>>>>>>>')
+    return res.status(200).json({ status: user.status });
+  }).catch((err) => {
     if (!err.statusCode) {
       err.statusCode = 500;
     }
     next(err);
-  }
+    return err;
+  });
 };
 
 exports.updateUserStatus = async (req, res, next) => {
