@@ -70,10 +70,12 @@ describe('Auth Controller - Login', () => {
       };
 
       AuthController.getUserStatus(req, res, () => {}).then(() => {
-        console.log('Res 1= >>>>>>>>>>>>>>>>>>>>>>>', res);
         expect(res.statusCode).to.be.equal(200);
         expect(res.userStatus).to.be.equal('I am new!');
-        done();
+
+        return User.deleteMany({}).then(() => {
+          return mongoose.disconnect().then(() => done());
+        })
       }).catch(() => done());
 
     }).catch(err => {
@@ -82,3 +84,52 @@ describe('Auth Controller - Login', () => {
     });
   });
 });
+
+describe('Auth Controller - Login 2', () => {
+  let user;
+  before((done) => {
+    mongoose.connect(
+      'mongodb://localhost/test', { useUnifiedTopology: true  }
+    ).then(result => {
+      return new User({
+        name: 'test',
+        email: 'tester@t.com',
+        password: 'test',
+        posts: []
+      }).save();
+    }).then((savedUser) => {
+      user = savedUser;
+      done();
+    }).catch(() => done());;
+  });
+
+  after((done) => {
+    User.deleteMany({}).then(() => {
+      return mongoose.disconnect().then(() => done());
+    }).catch(() => done());
+  });
+
+  it('Should send valid user status for an existing user', (done) => {
+    const req = { userId: user._id };
+    const res = {
+      statusCode: 500,
+      userStatus: null,
+      status: function(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json: function(data) { // Do not use Arrow function () => {} where we need to use "this"
+        this.userStatus = data.status;
+      }
+    };
+    console.log('res 1 >>>>>>>>>>>>', res);
+    AuthController.getUserStatus(req, res, () => {}).then(() => {
+      console.log('res 2 >>>>>>>>>>>>', res);
+      expect(res.statusCode).to.be.equal(300);
+      console.log('res 3 >>>>>>>>>>>>', res);
+      expect(res.userStatus).to.be.equal('I am new!');
+      done();
+    }).catch(() => done());
+  });
+});
+
